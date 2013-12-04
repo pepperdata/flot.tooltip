@@ -54,11 +54,13 @@
 					points: { show: true }
 				},
 				grid: {
-					hoverable: true //IMPORTANT! this is needed for tooltip to work
+					hoverable: true, //IMPORTANT! this is needed for tooltip to work
+					clickable: true
 				},
 				yaxis: { min: -1.2, max: 1.2 },
 				tooltip: true,
 				tooltipOpts: {
+					stickyable: true,
 					content: "'%s' of %x.1 is %y.4",
 					shifts: {
 						x: -60,

@@ -66,7 +66,8 @@ module.exports = function(grunt) {
     }
   });
 
-  // Default task
+  
   grunt.registerTask('build', ['jshint', 'concat:main', 'uglify:main']);
-
+  // Default task
+  grunt.registerTask('default', ['build']);
 };

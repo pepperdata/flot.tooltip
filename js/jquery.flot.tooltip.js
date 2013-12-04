@@ -6,7 +6,7 @@
  * author: Krzysztof Urbas @krzysu [myviews.pl]
  * website: https://github.com/krzysu/flot.tooltip
  * 
- * build on 2013-11-18
+ * build on 2013-12-04
  * released under MIT License, 2012
 */ 
 (function ($) {
@@ -29,6 +29,7 @@
                 y: 20
             },
             defaultTheme: true,
+            stickyable: false,
 
             // callbacks
             onHover: function(flotItem, $tooltipEl) {}
@@ -48,6 +49,8 @@
     FlotTooltip.prototype.init = function(plot) {
 
         var that = this;
+        that.$placeholder = plot.getPlaceholder();
+        that.plot = plot;
 
         plot.hooks.bindEvents.push(function (plot, eventHolder) {
 
@@ -65,7 +68,10 @@
 
             // bind event
             $( plot.getPlaceholder() ).bind("plothover", plothover);
-			
+			if(that.tooltipOptions.stickyable) {
+                $( plot.getPlaceholder() ).bind("plotclick", plotclick);
+            }
+
 			$(eventHolder).bind('mousemove', mouseMove);
  
         });
@@ -79,29 +85,58 @@
             pos.y = e.pageY;
             that.updateTooltipPosition(pos);
         }
+
 		function plothover(event, pos, item) {
-			var $tip = that.getDomElement();
-            if (item) {
-                var tipText;
+            if(!that.stickyItem)
+            {
+                var $tip = that.getDomElement();
+                if (item) {
+                    var tipText;
 
-                // convert tooltip content template to real tipText
-                tipText = that.stringFormat(that.tooltipOptions.content, item);
+                    // convert tooltip content template to real tipText
+                    tipText = that.stringFormat(that.tooltipOptions.content, item);
 
-                $tip.html( tipText );
-                that.updateTooltipPosition({ x: pos.pageX, y: pos.pageY });
-                $tip.css({
-                        left: that.tipPosition.x + that.tooltipOptions.shifts.x,
-                        top: that.tipPosition.y + that.tooltipOptions.shifts.y
-                    })
-                    .show();
+                    $tip.html( tipText );
+                    that.updateTooltipPosition({ x: pos.pageX, y: pos.pageY });
+                    $tip.css({
+                            left: that.tipPosition.x + that.tooltipOptions.shifts.x,
+                            top: that.tipPosition.y + that.tooltipOptions.shifts.y
+                        })
+                        .show();
 
-                // run callback
-                if(typeof that.tooltipOptions.onHover === 'function') {
-                    that.tooltipOptions.onHover(item, $tip);
+                    // run callback
+                    if(typeof that.tooltipOptions.onHover !== 'function') {
+                        that.tooltipOptions.onHover(item, $tip);
+                    }
+                }
+                else {
+                    hideTooltip();
                 }
             }
-            else {
-                $tip.hide().html('');
+        }
+
+        function plotclick(event, pos, item) {
+            var $tip = that.getDomElement();
+            if(that.tooltipOptions.stickyable) {
+                if(item && !that.stickyItem) {
+                    that.stickyItem = item;
+                    that.plot.highlight(item.seriesIndex, item.dataIndex);
+                }
+                else {
+                    hideTooltip();
+                    plothover(event,pos,item);
+                }
+            }
+
+            that.lastClickTimeStamp = event.timeStamp;
+        }
+
+        function hideTooltip() {
+            var $tip = that.getDomElement();
+            $tip.hide().html('');
+            if(that.stickyItem) {
+                that.plot.unhighlight(that.stickyItem.seriesIndex, that.stickyItem.dataIndex);
+                that.stickyItem = null;
             }
         }
     };
@@ -111,17 +146,12 @@
      * @return jQuery object
      */
     FlotTooltip.prototype.getDomElement = function() {
-        var $tip;
-
-        if( $('#flotTip').length > 0 ){
-            $tip = $('#flotTip');
-        }
-        else {
-            $tip = $('<div />').attr('id', 'flotTip');
-            $tip.appendTo('body').hide().css({position: 'absolute'});
+        if( !this.$flotTip ) {
+            this.$flotTip = $('<div />').attr('class', 'flotTip');
+            this.$flotTip.appendTo('body').hide().css({position: 'absolute'});
 
             if(this.tooltipOptions.defaultTheme) {
-                $tip.css({
+                this.$flotTip.css({
                     'background': '#fff',
                     'z-index': '100',
                     'padding': '0.4em 0.6em',
@@ -134,13 +164,14 @@
             }
         }
 
-        return $tip;
+        return this.$flotTip;
     };
 
     // as the name says
     FlotTooltip.prototype.updateTooltipPosition = function(pos) {
-        var totalTipWidth = $("#flotTip").outerWidth() + this.tooltipOptions.shifts.x;
-        var totalTipHeight = $("#flotTip").outerHeight() + this.tooltipOptions.shifts.y;
+        var $tip = this.getDomElement();
+        var totalTipWidth = $tip.outerWidth() + this.tooltipOptions.shifts.x;
+        var totalTipHeight = $tip.outerHeight() + this.tooltipOptions.shifts.y;
         if ((pos.x - $(window).scrollLeft()) > ($(window).innerWidth() - totalTipWidth)) {
             pos.x -= totalTipWidth;
         }
