@@ -57,17 +57,17 @@
 
             // bind event
             $( plot.getPlaceholder() ).bind("plothover", plothover);
-			if(that.tooltipOptions.stickyable) {
+            if(that.tooltipOptions.stickyable) {
                 $( plot.getPlaceholder() ).bind("plotclick", plotclick);
             }
 
-			$(eventHolder).bind('mousemove', mouseMove);
+            $(eventHolder).bind('mousemove', mouseMove);
  
         });
-		plot.hooks.shutdown.push(function (plot, eventHolder){
-			$(plot.getPlaceholder()).unbind("plothover", plothover);
-			$(eventHolder).unbind("mousemove", mouseMove);
-		});
+        plot.hooks.shutdown.push(function (plot, eventHolder){
+            $(plot.getPlaceholder()).unbind("plothover", plothover);
+            $(eventHolder).unbind("mousemove", mouseMove);
+        });
         function mouseMove(e){ 
             var pos = {};
             pos.x = e.pageX;
@@ -75,7 +75,7 @@
             that.updateTooltipPosition(pos);
         }
 
-		function plothover(event, pos, item) {
+        function plothover(event, pos, item) {
             if(!that.stickyItem)
             {
                 var $tip = that.getDomElement();
