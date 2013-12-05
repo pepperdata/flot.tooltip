@@ -66,6 +66,8 @@
         });
         plot.hooks.shutdown.push(function (plot, eventHolder){
             $(plot.getPlaceholder()).unbind("plothover", plothover);
+            $(plot.getPlaceholder()).unbind("plotclick", plotclick);
+            that.getDomElement().remove();
             $(eventHolder).unbind("mousemove", mouseMove);
         });
         function mouseMove(e){ 
