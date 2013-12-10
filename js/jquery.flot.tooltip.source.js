@@ -21,7 +21,8 @@
             stickyable: false,
 
             // callbacks
-            onHover: function(flotItem, $tooltipEl) {}
+            onHover: function(flotItem, $tooltipEl) {},
+            onClick: function(flotItem, $tooltipEl, isSticky) {}
         }
     };
 
@@ -96,7 +97,7 @@
                         .show();
 
                     // run callback
-                    if(typeof that.tooltipOptions.onHover !== 'function') {
+                    if(typeof that.tooltipOptions.onHover === 'function') {
                         that.tooltipOptions.onHover(item, $tip);
                     }
                 }
@@ -112,10 +113,16 @@
                 if(item && !that.stickyItem) {
                     that.stickyItem = item;
                     that.plot.highlight(item.seriesIndex, item.dataIndex);
+                    if(typeof that.tooltipOptions.onClick === 'function') {
+                        that.tooltipOptions.onClick(item, $tip, true);
+                    }
                 }
                 else {
                     hideTooltip();
                     plothover(event,pos,item);
+                    if(typeof that.tooltipOptions.onClick === 'function') {
+                        that.tooltipOptions.onClick(item, $tip, false);
+                    }
                 }
             }
 

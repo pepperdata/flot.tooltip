@@ -65,6 +65,14 @@
 					shifts: {
 						x: -60,
 						y: 25
+					},
+					onClick: function(item, $tip, isSticky) {
+						if(isSticky) {
+							$tip.css("border-color","red");
+						} else {
+							$tip.css("border-color","black");
+						}
+						
 					}
 				}
 			};
