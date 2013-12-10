@@ -1,0 +1,23 @@
+{
+  "name": "flot.tooltip.pepperdata",
+  "version": "0.1.0",
+  "homepage": "https://github.com/pepperdata/flot.tooltip",
+  "description": "A stickyable flot tooltip.",
+  "main": "flot.tooltip.js",
+  "keywords": [
+    "flot",
+    "tooltip"
+  ],
+  "authors": [
+    "Krzysztof Urbas",
+    "Jeremy Hay"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
