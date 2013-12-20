@@ -19,6 +19,7 @@
             },
             defaultTheme: true,
             stickyable: false,
+            stickyClass: 'flotTipSticky',
 
             // callbacks
             onHover: function(flotItem, $tooltipEl) {},
@@ -91,10 +92,9 @@
                     $tip.html( tipText );
                     that.updateTooltipPosition({ x: pos.pageX, y: pos.pageY });
                     $tip.css({
-                            left: that.tipPosition.x + that.tooltipOptions.shifts.x,
-                            top: that.tipPosition.y + that.tooltipOptions.shifts.y
-                        })
-                        .show();
+                        left: that.tipPosition.x + that.tooltipOptions.shifts.x,
+                        top: that.tipPosition.y + that.tooltipOptions.shifts.y
+                    }).show();
 
                     // run callback
                     if(typeof that.tooltipOptions.onHover === 'function') {
@@ -111,17 +111,20 @@
             var $tip = that.getDomElement();
             if(that.tooltipOptions.stickyable) {
                 if(item && !that.stickyItem) {
+                    // make sticky
                     that.stickyItem = item;
                     that.plot.highlight(item.seriesIndex, item.dataIndex);
-                    if(typeof that.tooltipOptions.onClick === 'function') {
-                        that.tooltipOptions.onClick(item, $tip, true);
+                    $tip.addClass(that.tooltipOptions.stickyClass);
+                    if (typeof that.tooltipOptions.onClick === 'function') {
+                        that.tooltipOptions.onClick.call(that.plot, item, $tip, true);
                     }
-                }
-                else {
+                } else {
+                    // make unsticky
                     hideTooltip();
-                    plothover(event,pos,item);
-                    if(typeof that.tooltipOptions.onClick === 'function') {
-                        that.tooltipOptions.onClick(item, $tip, false);
+                    plothover(event, pos, item);
+                    $tip.removeClass(that.tooltipOptions.stickyClass);
+                    if (typeof that.tooltipOptions.onClick === 'function') {
+                        that.tooltipOptions.onClick.call(that.plot, item, $tip, false);
                     }
                 }
             }
