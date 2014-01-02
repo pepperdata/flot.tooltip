@@ -6,7 +6,7 @@
  * author: Krzysztof Urbas @krzysu [myviews.pl]
  * website: https://github.com/krzysu/flot.tooltip
  * 
- * build on 2013-12-20
+ * build on 2014-01-02
  * released under MIT License, 2012
 */ 
 (function ($) {
@@ -151,6 +151,9 @@
                 that.stickyItem = null;
             }
         }
+
+        // add public functions
+        that.plot.plotTooltip = { hideTooltip: hideTooltip};
     };
 
     /**

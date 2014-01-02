@@ -25,6 +25,7 @@
 
     <div id="placeholder" style="width: 825px; height: 150px;"></div>
 	<a href="javascript:void(0);" class="button" id="replot">Plot</a>
+	<a href="javascript:void(0);" class="button" id="hidesticky">hidesticky</a>
 
 	<script type="text/javascript">
 	$(document).ready(function(){
@@ -80,6 +81,11 @@
 			var plotObj = $.plot( $("#placeholder"),
 				[ { data: sin, label: "sin(x)"}, { data: cos, label: "cos(x)" } ],
 				options );
+
+			function unsticky() {
+				plotObj.plotTooltip.hideTooltip();
+			}
+			$("#hidesticky").click(unsticky)
 		}
 	});
 	</script>

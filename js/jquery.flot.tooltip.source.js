@@ -140,6 +140,9 @@
                 that.stickyItem = null;
             }
         }
+
+        // add public functions
+        that.plot.plotTooltip = { hideTooltip: hideTooltip};
     };
 
     /**
