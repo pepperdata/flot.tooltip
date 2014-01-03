@@ -134,7 +134,7 @@
 
         function hideTooltip() {
             var $tip = that.getDomElement();
-            $tip.hide().html('');
+            $tip.hide().html('').removeClass(that.tooltipOptions.stickyClass);
             if(that.stickyItem) {
                 that.plot.unhighlight(that.stickyItem.seriesIndex, that.stickyItem.dataIndex);
                 that.stickyItem = null;
@@ -142,7 +142,7 @@
         }
 
         // add public functions
-        that.plot.plotTooltip = { hideTooltip: hideTooltip};
+        that.plot.plotTooltip = { hideTooltip: hideTooltip };
     };
 
     /**
@@ -150,9 +150,15 @@
      * @return jQuery object
      */
     FlotTooltip.prototype.getDomElement = function() {
+        var flottipContainerId = "flotTips";
         if( !this.$flotTip ) {
             this.$flotTip = $('<div />').attr('class', 'flotTip');
-            this.$flotTip.appendTo('body').hide().css({position: 'absolute'});
+            var $flottips = $("#" + flottipContainerId);
+            if ($flottips.length === 0) {
+                $flottips = $("<div />").attr('id', flottipContainerId).appendTo('body');
+            }
+            this.$flotTip.appendTo($flottips).hide().css({position: 'absolute'});
+            this.$flotTip.data("plot", this.plot); // store what plot this is for
 
             if(this.tooltipOptions.defaultTheme) {
                 this.$flotTip.css({

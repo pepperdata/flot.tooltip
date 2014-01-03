@@ -82,8 +82,8 @@
 				[ { data: sin, label: "sin(x)"}, { data: cos, label: "cos(x)" } ],
 				options );
 
-			function unsticky() {
-				plotObj.plotTooltip.hideTooltip();
+			function unsticky(event) {
+				$(".flotTip").data("plot").plotTooltip.hideTooltip();
 			}
 			$("#hidesticky").click(unsticky)
 		}
