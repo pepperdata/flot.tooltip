@@ -6,7 +6,7 @@
  * author: Krzysztof Urbas @krzysu [myviews.pl]
  * website: https://github.com/krzysu/flot.tooltip
  * 
- * build on 2014-01-02
+ * build on 2015-01-20
  * released under MIT License, 2012
 */ 
 (function ($) {
@@ -75,7 +75,7 @@
             }
 
             $(eventHolder).bind('mousemove', mouseMove);
- 
+
         });
         plot.hooks.shutdown.push(function (plot, eventHolder){
             $(plot.getPlaceholder()).unbind("plothover", plothover);
@@ -83,7 +83,7 @@
             that.getDomElement().remove();
             $(eventHolder).unbind("mousemove", mouseMove);
         });
-        function mouseMove(e){ 
+        function mouseMove(e){
             var pos = {};
             pos.x = e.pageX;
             pos.y = e.pageY;
@@ -221,7 +221,7 @@
 
         // if it is a function callback get the content string
         if( typeof(content) === 'function' ) {
-            content = content(item.series.label, x, y, item);
+            content = content(item.series.label, x, y, item, this.plot);
         }
 
         // percent match for pie charts
