@@ -171,7 +171,7 @@
             this.$flotTip.appendTo($flottips).hide().css({position: 'absolute'});
             this.$flotTip.data("plot", this.plot); // store what plot this is for
 
-            if(this.tooltipOptions.defaultTheme) {
+            if(this.tooltipOptions && this.tooltipOptions.defaultTheme) {
                 this.$flotTip.css({
                     'background': '#fff',
                     'z-index': '100',
