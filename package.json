@@ -1,5 +1,5 @@
 {
-  "name": "jquery.flot.tooltip",
+  "name": "flot.tooltip.pepperdata",
   "version": "0.6.2",
   "description": "easy-to-use tooltips for Flot charts",
   "website": "https://github.com/krzysu/flot.tooltip",
@@ -8,12 +8,12 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "grunt": "~0.4.1",
-    "grunt-contrib-jshint": "~0.1.1",
-    "grunt-contrib-watch": "~0.3.1",
-    "grunt-contrib-uglify": "~0.2.0",
+    "grunt": "^1.1.0",
     "grunt-contrib-concat": "~0.1.3",
-    "grunt-contrib-connect": "~0.3.0"
+    "grunt-contrib-connect": "^2.1.0",
+    "grunt-contrib-jshint": "~2.1.0",
+    "grunt-contrib-watch": "^1.1.0",
+    "grunt-terser": "^1.0.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
