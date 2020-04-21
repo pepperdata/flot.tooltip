@@ -1,15 +1,18 @@
 /*
- * jquery.flot.tooltip
+ * flot.tooltip.pepperdata
  * 
  * description: easy-to-use tooltips for Flot charts
  * version: 0.6.2
  * author: Krzysztof Urbas @krzysu [myviews.pl]
  * website: https://github.com/krzysu/flot.tooltip
  * 
- * build on 2015-01-20
+ * build on 2020-04-20
  * released under MIT License, 2012
 */ 
 (function ($) {
+
+    const HOVER_TOOLTIP = 'hoverTooltip';
+    const STICKY_TOOLTIP = 'stickyTooltip';
 
     // plugin options, default values
     var defaultOptions = {
@@ -41,8 +44,20 @@
     // object
     var FlotTooltip = function(plot) {
 
-        // variables
-        this.tipPosition = {x: 0, y: 0};
+        // NOTE (phvc): Assumptions made in code for max of two tooltips
+        // { hoverTooltip: {}, stickyTooltip: {} }
+        // Each value has shape:
+        // {
+        //     tipPosition: {
+        //         x: Number,
+        //         y: Number,
+        //     },
+        //     node: $('<div />')
+        //             .attr('class', 'flotTip')
+        //             .attr('id', flottipContainerId)
+        //             .data("plot", this.plot)
+        // }
+        this.tooltips = {};
 
         this.init(plot);
     };
@@ -50,27 +65,24 @@
     // main plugin function
     FlotTooltip.prototype.init = function(plot) {
 
-        var that = this;
-        that.$placeholder = plot.getPlaceholder();
-        that.plot = plot;
+        var self = this;
+        self.$placeholder = plot.getPlaceholder();
+        self.plot = plot;
 
         plot.hooks.bindEvents.push(function (plot, eventHolder) {
 
             // get plot options
-            that.plotOptions = plot.getOptions();
+            self.plotOptions = plot.getOptions();
 
             // if not enabled return
-            if (that.plotOptions.tooltip === false || typeof that.plotOptions.tooltip === 'undefined') return;
+            if (self.plotOptions.tooltip === false || typeof self.plotOptions.tooltip === 'undefined') return;
 
             // shortcut to access tooltip options
-            that.tooltipOptions = that.plotOptions.tooltipOpts;
-
-            // create tooltip DOM element
-            var $tip = that.getDomElement();
+            self.tooltipOptions = self.plotOptions.tooltipOpts;
 
             // bind event
             $( plot.getPlaceholder() ).bind("plothover", plothover);
-            if(that.tooltipOptions.stickyable) {
+            if(self.tooltipOptions.stickyable) {
                 $( plot.getPlaceholder() ).bind("plotclick", plotclick);
             }
 
@@ -80,117 +92,249 @@
         plot.hooks.shutdown.push(function (plot, eventHolder){
             $(plot.getPlaceholder()).unbind("plothover", plothover);
             $(plot.getPlaceholder()).unbind("plotclick", plotclick);
-            that.getDomElement().remove();
+            if (self.tooltips[HOVER_TOOLTIP] && self.tooltips[HOVER_TOOLTIP].node) {
+                self.tooltips[HOVER_TOOLTIP].node.remove();
+                delete self.tooltips[HOVER_TOOLTIP];
+            }
+
+            if (self.tooltips[STICKY_TOOLTIP] && self.tooltips[STICKY_TOOLTIP].node) {
+                self.tooltips[STICKY_TOOLTIP].node.remove();
+                delete self.tooltips[STICKY_TOOLTIP];
+            }
             $(eventHolder).unbind("mousemove", mouseMove);
         });
         function mouseMove(e){
             var pos = {};
             pos.x = e.pageX;
             pos.y = e.pageY;
-            that.updateTooltipPosition(pos);
+            self.updateTooltipPosition(pos);
         }
 
+        /**
+         * Called whenever mouse hovers over a plot, ie, many times
+         * @param Object event jQuery event
+         * @param Object pos Contains positional (xy) data
+         * @param {Object} item Can be null if hovering over empty space. Config for a data point
+         */
         function plothover(event, pos, item) {
-            if(!that.stickyItem)
-            {
-                var $tip = that.getDomElement();
-                if (item) {
-                    var tipText;
+            if (item) {
+                // Don't show a tooltip if hovering over the same one as sticky tooltip
+                if (self.tooltips[STICKY_TOOLTIP] && self.tooltips[STICKY_TOOLTIP].item) {
+                    const currentData0 = item.datapoint[0];
+                    const currentData1 = item.datapoint[1];
+                    const stickyData0 = self.tooltips[STICKY_TOOLTIP].item.datapoint[0];
+                    const stickyData1 = self.tooltips[STICKY_TOOLTIP].item.datapoint[1];
 
-                    // convert tooltip content template to real tipText
-                    tipText = that.stringFormat(that.tooltipOptions.content, item);
+                    const isHoveringOverStickyDataPoint = currentData0 === stickyData0 &&
+                    currentData1 === stickyData1;
 
-                    $tip.html( tipText );
-                    that.updateTooltipPosition({ x: pos.pageX, y: pos.pageY });
-                    $tip.css({
-                        left: that.tipPosition.x + that.tooltipOptions.shifts.x,
-                        top: that.tipPosition.y + that.tooltipOptions.shifts.y
-                    }).show();
-
-                    // run callback
-                    if(typeof that.tooltipOptions.onHover === 'function') {
-                        that.tooltipOptions.onHover(item, $tip);
+                    if (isHoveringOverStickyDataPoint) {
+                        hideTooltip(HOVER_TOOLTIP);
+                        return;
                     }
                 }
-                else {
-                    hideTooltip();
+
+                const $tip = self.getDomElement(HOVER_TOOLTIP);
+                self.attachTooltipToBody($tip);
+                const { tipPosition } = self.tooltips[HOVER_TOOLTIP];
+
+                // convert tooltip content template to real tipText
+                const tipText = self.stringFormat(self.tooltipOptions.content, item);
+
+                $tip.html(tipText);
+                self.updateTooltipPosition({ x: pos.pageX, y: pos.pageY });
+                $tip.css({
+                    left: tipPosition.x + self.tooltipOptions.shifts.x,
+                    top: tipPosition.y + self.tooltipOptions.shifts.y
+                }).show();
+
+                if(typeof self.tooltipOptions.onHover === 'function') {
+                    self.tooltipOptions.onHover(item, $tip);
                 }
+            }
+            else {
+                // User has hovered off the chart in this case
+                hideTooltip(HOVER_TOOLTIP);
             }
         }
 
         function plotclick(event, pos, item) {
-            var $tip = that.getDomElement();
-            if(that.tooltipOptions.stickyable) {
-                if(item && !that.stickyItem) {
-                    // make sticky
-                    that.stickyItem = item;
-                    that.plot.highlight(item.seriesIndex, item.dataIndex);
-                    $tip.addClass(that.tooltipOptions.stickyClass);
-                    if (typeof that.tooltipOptions.onClick === 'function') {
-                        that.tooltipOptions.onClick.call(that.plot, item, $tip, true);
+            if(self.tooltipOptions.stickyable) {
+                // make a sticky tooltip if none or reassign sticky to new point
+                if (item) {
+                    if (self.tooltips[STICKY_TOOLTIP] && self.tooltips[STICKY_TOOLTIP].item) {
+                        // Check if user is clicking on a sticky point to unstick it
+                        const currentData0 = item.datapoint[0];
+                        const currentData1 = item.datapoint[1];
+                        const stickyData0 = self.tooltips[STICKY_TOOLTIP].item.datapoint[0];
+                        const stickyData1 = self.tooltips[STICKY_TOOLTIP].item.datapoint[1];
+
+                        const isClickingOnStickyDataPoint = currentData0 === stickyData0 &&
+                        currentData1 === stickyData1;
+
+                        if (isClickingOnStickyDataPoint) {
+                            // unsticky
+                            const $stickyTooltip = self.getDomElement(STICKY_TOOLTIP);
+                            $stickyTooltip.removeClass(self.tooltipOptions.stickyClass);
+
+                            // Remove the dot
+                            self.plot.unhighlight(item.seriesIndex, item.dataIndex);
+
+                            // transfer to hover state instead of destroying + recreating
+                            const $hoverTooltip = self.getDomElement(HOVER_TOOLTIP);
+                            self.tooltips[HOVER_TOOLTIP].node = $stickyTooltip;
+
+                            delete self.tooltips[STICKY_TOOLTIP];
+
+                            if (typeof self.tooltipOptions.onClick === 'function') {
+                                self.tooltipOptions.onClick.call(self.plot, item, $hoverTooltip, false);
+                            }
+                            // Don't try to make a new tooltip if clicking on datapoint to close
+                            return;
+                        } else {
+                            // Use has clicked somewhere else on the graph so hide the current
+                            // sticky tooltip before making a new one
+                            hideTooltip(STICKY_TOOLTIP);
+
+                        }
+                    }
+
+                    // In most cases, there is a tooltip node already attached to the plot since
+                    // the user has to hover over the point before clicking, so we reassign it
+                    // here instead of making a new one
+                    // Then we remove the hover tooltip entry to clean up the internal state
+                    // However, there will be no hover tooltip if the user clicks the same point
+                    // to unsticky a tooltip since we do not duplicate hovered/sticky tooltips
+
+                    // Simulate a hover to produce a tooltip
+                    if (!self.tooltips[HOVER_TOOLTIP]) {
+                        plothover(event, pos, item);
+                    }
+
+                    self.tooltips[STICKY_TOOLTIP] = self.tooltips[HOVER_TOOLTIP];
+                    self.tooltips[STICKY_TOOLTIP].item = item;
+                    delete self.tooltips[HOVER_TOOLTIP];
+
+                    // Need this delay to allow hideTooltip call above to unhighlight the series
+                    // This allows the dot marking the sticky tooltip datapoint to render
+                    window.setTimeout(() => {
+                        self.plot.highlight(item.seriesIndex, item.dataIndex);
+                    }, 0);
+
+                    const $tip = self.tooltips[STICKY_TOOLTIP].node;
+                    $tip.addClass(self.tooltipOptions.stickyClass);
+                    if (typeof self.tooltipOptions.onClick === 'function') {
+                        self.tooltipOptions.onClick.call(self.plot, item, $tip, true);
                     }
                 } else {
-                    // make unsticky
-                    hideTooltip();
-                    plothover(event, pos, item);
-                    $tip.removeClass(that.tooltipOptions.stickyClass);
-                    if (typeof that.tooltipOptions.onClick === 'function') {
-                        that.tooltipOptions.onClick.call(that.plot, item, $tip, false);
+                    // make unsticky when user clicks on blank area of chart
+                    hideTooltip(STICKY_TOOLTIP);
+                    const $tip = self.getDomElement(STICKY_TOOLTIP);
+                    $tip.removeClass(self.tooltipOptions.stickyClass);
+                    if (typeof self.tooltipOptions.onClick === 'function') {
+                        self.tooltipOptions.onClick.call(self.plot, item, $tip, false);
                     }
                 }
             }
 
-            that.lastClickTimeStamp = event.timeStamp;
+            self.lastClickTimeStamp = event.timeStamp;
         }
+        /**
+         * Removes tooltip element and also deletes entry from internal state
+         * @param String type of tooltip - STICKY_TOOLTIP or HOVER_TOOLTIP
+         */
+        function hideTooltip(tooltipType) {
+            const $tip = self.getDomElement(tooltipType);
 
-        function hideTooltip() {
-            var $tip = that.getDomElement();
-            $tip.hide().html('').removeClass(that.tooltipOptions.stickyClass);
-            if(that.stickyItem) {
-                that.plot.unhighlight(that.stickyItem.seriesIndex, that.stickyItem.dataIndex);
-                that.stickyItem = null;
+            self.detachTooltipFromBody($tip);
+            if(tooltipType === STICKY_TOOLTIP) {
+                const stickyItem = self.tooltips[STICKY_TOOLTIP].item;
+                if (stickyItem) {
+                    self.plot.unhighlight(stickyItem.seriesIndex, stickyItem.dataIndex);
+                }
             }
+
+            delete self.tooltips[tooltipType];
         }
 
         // add public functions
-        that.plot.plotTooltip = { hideTooltip: hideTooltip };
+        self.plot.plotTooltip = { hideTooltip: hideTooltip };
     };
+
+
+    FlotTooltip.prototype.makeTooltipNode = function() {
+        const self = this;
+        const $tooltipNode = $('<div />').attr('class', 'flotTip');
+        $tooltipNode.data("plot", self.plot); // store what plot this is for
+
+        if(self.tooltipOptions.defaultTheme) {
+            $tooltipNode.css({
+                'background': '#fff',
+                'z-index': '100',
+                'padding': '0.4em 0.6em',
+                'border-radius': '0.5em',
+                'font-size': '0.8em',
+                'border': '1px solid #111',
+                'display': 'none',
+                'white-space': 'nowrap'
+            });
+        }
+        return $tooltipNode;
+    };
+
+    FlotTooltip.prototype.attachTooltipToBody = function ($tooltipNode) {
+        const flottipContainerId = "flotTips";
+        let $flotTipContainer = $("#" + flottipContainerId);
+        if ($flotTipContainer.length === 0) {
+            $flotTipContainer = $("<div />").attr('id', flottipContainerId).appendTo('body');
+        }
+        $tooltipNode.appendTo($flotTipContainer).hide().css({position: 'absolute'});
+    };
+
+    FlotTooltip.prototype.detachTooltipFromBody = function ($tooltipNode) {
+        const flottipContainerId = "flotTips";
+        let $flotTipContainer = $("#" + flottipContainerId);
+        if ($flotTipContainer.length === 0) {
+            return;
+        }
+        $tooltipNode.detach();
+    };
+
 
     /**
-     * get or create tooltip DOM element
+     * Get or create tooltip DOM element.
+     * If the tooltipType is not already present, creates matching one and updates internal state
+     * Any logic for showing/hiding tooltips should be done outside of this function
+     * @param String tooltipType of the node
      * @return jQuery object
      */
-    FlotTooltip.prototype.getDomElement = function() {
-        var flottipContainerId = "flotTips";
-        if( !this.$flotTip ) {
-            this.$flotTip = $('<div />').attr('class', 'flotTip');
-            var $flottips = $("#" + flottipContainerId);
-            if ($flottips.length === 0) {
-                $flottips = $("<div />").attr('id', flottipContainerId).appendTo('body');
-            }
-            this.$flotTip.appendTo($flottips).hide().css({position: 'absolute'});
-            this.$flotTip.data("plot", this.plot); // store what plot this is for
+    FlotTooltip.prototype.getDomElement = function(tooltipType) {
+        const self = this;
+        let $tooltipNode;
+        if (self.tooltips[tooltipType]) {
+            $tooltipNode = self.tooltips[tooltipType].node;
+        } else {
+            $tooltipNode = self.makeTooltipNode(tooltipType);
 
-            if(this.tooltipOptions && this.tooltipOptions.defaultTheme) {
-                this.$flotTip.css({
-                    'background': '#fff',
-                    'z-index': '100',
-                    'padding': '0.4em 0.6em',
-                    'border-radius': '0.5em',
-                    'font-size': '0.8em',
-                    'border': '1px solid #111',
-                    'display': 'none',
-                    'white-space': 'nowrap'
-                });
-            }
+            // Update internal state
+            self.tooltips[tooltipType] = {
+                tipPosition: {},
+                node: $tooltipNode,
+            };
         }
 
-        return this.$flotTip;
+        return $tooltipNode;
     };
 
-    // as the name says
     FlotTooltip.prototype.updateTooltipPosition = function(pos) {
-        var $tip = this.getDomElement();
+        const self = this;
+        const tooltipCount = Object.keys(self.tooltips).length;
+
+        if (tooltipCount === 0) {
+            return;
+        }
+        // Sticky tooltips should never move so only update hovering ones
+        var $tip = self.getDomElement(HOVER_TOOLTIP);
         var totalTipWidth = $tip.outerWidth() + this.tooltipOptions.shifts.x;
         var totalTipHeight = $tip.outerHeight() + this.tooltipOptions.shifts.y;
         if ((pos.x - $(window).scrollLeft()) > ($(window).innerWidth() - totalTipWidth)) {
@@ -199,8 +343,8 @@
         if ((pos.y - $(window).scrollTop()) > ($(window).innerHeight() - totalTipHeight)) {
             pos.y -= totalTipHeight;
         }
-        this.tipPosition.x = pos.x;
-        this.tipPosition.y = pos.y;
+        self.tooltips[HOVER_TOOLTIP].tipPosition.x = pos.x;
+        self.tooltips[HOVER_TOOLTIP].tipPosition.y = pos.y;
     };
 
     /**

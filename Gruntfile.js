@@ -1,7 +1,7 @@
 module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-contrib-jshint');
-  grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-terser');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-connect');
@@ -15,7 +15,10 @@ module.exports = function(grunt) {
       files: [
         'Gruntfile.js',
         'js/jquery.flot.tooltip.source.js'
-      ]
+      ],
+      options: {
+        esversion: 9,
+      }
     },
 
     concat: {
@@ -38,10 +41,8 @@ module.exports = function(grunt) {
       }
     },
 
-    uglify: {
-      options: {
-        banner: '<%= concat.options.banner %>'
-      },
+    // fork of uglify-es so we can use modern JS
+    terser: {
       main: {
         src: ['js/jquery.flot.tooltip.source.js'],
         dest: 'js/jquery.flot.tooltip.min.js'
@@ -61,13 +62,13 @@ module.exports = function(grunt) {
     watch: { // for development run 'grunt watch'
       main: {
         files: 'js/*.source.js',
-        tasks: ['jshint','concat:main','uglify:main']
+        tasks: ['jshint','concat:main','terser:main']
       }
     }
   });
 
-  
-  grunt.registerTask('build', ['jshint', 'concat:main', 'uglify:main']);
+
+  grunt.registerTask('build', ['jshint', 'concat:main', 'terser:main']);
   // Default task
   grunt.registerTask('default', ['build']);
 };
