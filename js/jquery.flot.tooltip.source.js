@@ -1,5 +1,8 @@
 (function ($) {
 
+    const HOVER_TOOLTIP = 'hoverTooltip';
+    const STICKY_TOOLTIP = 'stickyTooltip';
+
     // plugin options, default values
     var defaultOptions = {
         tooltip: false,
@@ -30,8 +33,22 @@
     // object
     var FlotTooltip = function(plot) {
 
-        // variables
-        this.tipPosition = {x: 0, y: 0};
+        // NOTE (phvc): Assumptions made in code for max of two tooltips
+        // { HOVER_TOOLTIP: {}, STICKY_TOOLTIP: {} }
+        // Each value has shape:
+        // {
+        //     tipPosition: {
+        //         x: Number,
+        //         y: Number,
+        //     },
+        //     node: $('<div />')
+        //             .attr('class', 'flotTip')
+        //             .attr('id', flottipContainerId)
+        //             .data("plot", this.plot)
+        // }
+        // STICKY_TOOLTIP has an additional key `item` containing data about the locked data point
+        // item: {}
+        this.tooltips = {};
 
         this.init(plot);
     };
@@ -146,35 +163,28 @@
     };
 
     /**
-     * get or create tooltip DOM element
+     * Get or create tooltip DOM element.
+     * If the tooltipType is not already present, creates matching one and updates internal state
+     * Any logic for showing/hiding tooltips should be done outside of this function
+     * @param String tooltipType of the node
      * @return jQuery object
      */
-    FlotTooltip.prototype.getDomElement = function() {
-        var flottipContainerId = "flotTips";
-        if( !this.$flotTip ) {
-            this.$flotTip = $('<div />').attr('class', 'flotTip');
-            var $flottips = $("#" + flottipContainerId);
-            if ($flottips.length === 0) {
-                $flottips = $("<div />").attr('id', flottipContainerId).appendTo('body');
-            }
-            this.$flotTip.appendTo($flottips).hide().css({position: 'absolute'});
-            this.$flotTip.data("plot", this.plot); // store what plot this is for
+    FlotTooltip.prototype.getDomElement = function(tooltipType) {
+        const self = this;
+        let $tooltipNode;
+        if (self.tooltips[tooltipType]) {
+            $tooltipNode = self.tooltips[tooltipType].node;
+        } else {
+            $tooltipNode = self.makeTooltipNode(tooltipType);
 
-            if(this.tooltipOptions.defaultTheme) {
-                this.$flotTip.css({
-                    'background': '#fff',
-                    'z-index': '100',
-                    'padding': '0.4em 0.6em',
-                    'border-radius': '0.5em',
-                    'font-size': '0.8em',
-                    'border': '1px solid #111',
-                    'display': 'none',
-                    'white-space': 'nowrap'
-                });
-            }
+            // Update internal state
+            self.tooltips[tooltipType] = {
+                tipPosition: {},
+                node: $tooltipNode,
+            };
         }
 
-        return this.$flotTip;
+        return $tooltipNode;
     };
 
     // as the name says
