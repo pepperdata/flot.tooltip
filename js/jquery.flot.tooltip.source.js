@@ -69,10 +69,7 @@
             if (self.plotOptions.tooltip === false || typeof self.plotOptions.tooltip === 'undefined') return;
 
             // shortcut to access tooltip options
-            that.tooltipOptions = that.plotOptions.tooltipOpts;
-
-            // create tooltip DOM element
-            var $tip = that.getDomElement();
+            self.tooltipOptions = self.plotOptions.tooltipOpts;
 
             // bind event
             $( plot.getPlaceholder() ).bind("plothover", plothover);
