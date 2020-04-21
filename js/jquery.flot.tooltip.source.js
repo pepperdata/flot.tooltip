@@ -56,17 +56,17 @@
     // main plugin function
     FlotTooltip.prototype.init = function(plot) {
 
-        var that = this;
-        that.$placeholder = plot.getPlaceholder();
-        that.plot = plot;
+        var self = this;
+        self.$placeholder = plot.getPlaceholder();
+        self.plot = plot;
 
         plot.hooks.bindEvents.push(function (plot, eventHolder) {
 
             // get plot options
-            that.plotOptions = plot.getOptions();
+            self.plotOptions = plot.getOptions();
 
             // if not enabled return
-            if (that.plotOptions.tooltip === false || typeof that.plotOptions.tooltip === 'undefined') return;
+            if (self.plotOptions.tooltip === false || typeof self.plotOptions.tooltip === 'undefined') return;
 
             // shortcut to access tooltip options
             that.tooltipOptions = that.plotOptions.tooltipOpts;
@@ -76,7 +76,7 @@
 
             // bind event
             $( plot.getPlaceholder() ).bind("plothover", plothover);
-            if(that.tooltipOptions.stickyable) {
+            if(self.tooltipOptions.stickyable) {
                 $( plot.getPlaceholder() ).bind("plotclick", plotclick);
             }
 
@@ -101,7 +101,7 @@
             var pos = {};
             pos.x = e.pageX;
             pos.y = e.pageY;
-            that.updateTooltipPosition(pos);
+            self.updateTooltipPosition(pos);
         }
 
         /**
