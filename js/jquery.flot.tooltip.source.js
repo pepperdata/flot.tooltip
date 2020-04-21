@@ -86,7 +86,15 @@
         plot.hooks.shutdown.push(function (plot, eventHolder){
             $(plot.getPlaceholder()).unbind("plothover", plothover);
             $(plot.getPlaceholder()).unbind("plotclick", plotclick);
-            that.getDomElement().remove();
+            if (self.tooltips[HOVER_TOOLTIP] && self.tooltips[HOVER_TOOLTIP].node) {
+                self.tooltips[HOVER_TOOLTIP].node.remove();
+                delete self.tooltips[HOVER_TOOLTIP];
+            }
+
+            if (self.tooltips[STICKY_TOOLTIP] && self.tooltips[STICKY_TOOLTIP].node) {
+                self.tooltips[STICKY_TOOLTIP].node.remove();
+                delete self.tooltips[STICKY_TOOLTIP];
+            }
             $(eventHolder).unbind("mousemove", mouseMove);
         });
         function mouseMove(e){
